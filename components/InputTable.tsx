@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { KeyValue } from '../types';
 import { generateId } from '../utils';
 
@@ -8,11 +8,124 @@ interface InputTableProps {
   onChange: (items: KeyValue[]) => void;
   title?: string;
   hideTitle?: boolean;
+  withTypeSelector?: boolean; // New prop to control visibility of the Text/File dropdown
 }
 
-export const InputTable: React.FC<InputTableProps> = ({ items, onChange, title, hideTitle }) => {
+// Sub-component for individual rows to manage dropdown state independently
+const InputTableRow: React.FC<{
+    item: KeyValue;
+    onChange: (id: string, field: keyof KeyValue, val: any) => void;
+    onFileChange: (id: string, file: File | null) => void;
+    onRemove: (id: string) => void;
+    onToggle: (id: string) => void;
+    isLast: boolean;
+    withTypeSelector: boolean;
+    showRemoveButton: boolean;
+}> = ({ item, onChange, onFileChange, onRemove, onToggle, isLast, withTypeSelector, showRemoveButton }) => {
+    const [isTypeOpen, setIsTypeOpen] = useState(false);
+    const typeRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (typeRef.current && !typeRef.current.contains(event.target as Node)) {
+                setIsTypeOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleTypeSelect = (type: 'text' | 'file') => {
+        onChange(item.id, 'type', type);
+        setIsTypeOpen(false);
+    };
+
+    return (
+        <div className="flex items-start mb-1 group">
+          <div className="w-8 flex justify-center pt-2">
+            <input 
+              type="checkbox" 
+              checked={item.enabled} 
+              onChange={() => onToggle(item.id)}
+              className="rounded text-green-600 focus:ring-green-500 cursor-pointer"
+            />
+          </div>
+          <div className="flex-1 px-1 relative">
+            <input 
+              type="text" 
+              value={item.key} 
+              placeholder="Key"
+              onChange={(e) => onChange(item.id, 'key', e.target.value)}
+              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none transition-colors"
+            />
+          </div>
+          <div className="flex-1 px-1 relative flex space-x-1">
+             {/* Value Input or File Input */}
+             {item.type === 'file' && withTypeSelector ? (
+                 <div className="flex-1 relative">
+                    <input 
+                        type="file"
+                        onChange={(e) => onFileChange(item.id, e.target.files ? e.target.files[0] : null)}
+                        className="w-full text-xs text-gray-500 border border-gray-300 rounded py-1 px-1 bg-white"
+                    />
+                 </div>
+             ) : (
+                <input 
+                    type="text" 
+                    value={item.value} 
+                    placeholder="Value"
+                    onChange={(e) => onChange(item.id, 'value', e.target.value)}
+                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none transition-colors"
+                />
+             )}
+             
+             {/* Custom Type Selector Dropdown */}
+             {withTypeSelector && (
+                 <div className="relative w-[70px] flex-shrink-0" ref={typeRef}>
+                     <button 
+                        onClick={() => setIsTypeOpen(!isTypeOpen)}
+                        className="w-full h-full bg-white border border-gray-300 rounded px-2 flex items-center justify-between hover:border-gray-400 focus:border-green-500 transition-colors text-[10px] text-gray-600 font-medium"
+                     >
+                         <span>{item.type === 'file' ? 'File' : 'Text'}</span>
+                         <svg className={`fill-current h-2 w-2 text-gray-400 transform transition-transform ${isTypeOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                     </button>
+
+                     {isTypeOpen && (
+                         <div className="absolute right-0 top-full mt-1 w-20 bg-white border border-gray-200 shadow-lg rounded z-50 py-1 flex flex-col animate-fadeIn">
+                            <button 
+                                onClick={() => handleTypeSelect('text')} 
+                                className={`text-left px-3 py-1.5 text-[10px] hover:bg-green-50 hover:text-green-700 ${item.type !== 'file' ? 'text-green-600 font-bold' : 'text-gray-700'}`}
+                            >
+                                Text
+                            </button>
+                            <button 
+                                onClick={() => handleTypeSelect('file')} 
+                                className={`text-left px-3 py-1.5 text-[10px] hover:bg-green-50 hover:text-green-700 ${item.type === 'file' ? 'text-green-600 font-bold' : 'text-gray-700'}`}
+                            >
+                                File
+                            </button>
+                         </div>
+                     )}
+                 </div>
+             )}
+          </div>
+          <div className="w-8 flex justify-center pt-2">
+            {showRemoveButton && (
+                <button 
+                onClick={() => onRemove(item.id)} 
+                className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Remove"
+                >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            )}
+          </div>
+        </div>
+    );
+};
+
+export const InputTable: React.FC<InputTableProps> = ({ items, onChange, title, hideTitle, withTypeSelector = false }) => {
   
-  // Ensure there is always at least one row if empty
   React.useEffect(() => {
     if (items.length === 0) {
       onChange([{ id: generateId(), key: '', value: '', enabled: true, type: 'text' }]);
@@ -24,7 +137,6 @@ export const InputTable: React.FC<InputTableProps> = ({ items, onChange, title, 
       item.id === id ? { ...item, [field]: val } : item
     );
     
-    // Auto-add row if editing the last one
     const lastItem = newItems[newItems.length - 1];
     if (lastItem.id === id && (val !== '')) {
        newItems.push({ id: generateId(), key: '', value: '', enabled: true, type: 'text' });
@@ -41,7 +153,6 @@ export const InputTable: React.FC<InputTableProps> = ({ items, onChange, title, 
   };
 
   const handleRemove = (id: string) => {
-    // If it's the only item, just clear it
     if (items.length <= 1) {
         onChange([{ id: generateId(), key: '', value: '', enabled: true, type: 'text' }]);
         return;
@@ -71,71 +182,17 @@ export const InputTable: React.FC<InputTableProps> = ({ items, onChange, title, 
 
       {/* Rows */}
       {items.map((item, index) => (
-        <div key={item.id} className="flex items-start mb-1 group">
-          <div className="w-8 flex justify-center pt-2">
-            <input 
-              type="checkbox" 
-              checked={item.enabled} 
-              onChange={() => handleToggle(item.id)}
-              className="rounded text-green-600 focus:ring-green-500 cursor-pointer"
-            />
-          </div>
-          <div className="flex-1 px-1 relative">
-            <input 
-              type="text" 
-              value={item.key} 
-              placeholder="Key"
-              onChange={(e) => handleChange(item.id, 'key', e.target.value)}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none transition-colors"
-            />
-          </div>
-          <div className="flex-1 px-1 relative flex space-x-1">
-             {item.type === 'file' ? (
-                 <div className="flex-1 relative">
-                    <input 
-                        type="file"
-                        onChange={(e) => handleFileChange(item.id, e.target.files ? e.target.files[0] : null)}
-                        className="w-full text-xs text-gray-500 border border-gray-300 rounded py-1 px-1"
-                    />
-                 </div>
-             ) : (
-                <input 
-                    type="text" 
-                    value={item.value} 
-                    placeholder="Value"
-                    onChange={(e) => handleChange(item.id, 'value', e.target.value)}
-                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none transition-colors"
-                />
-             )}
-             
-             {/* Type Selector Dropdown for Body items */}
-             <div className="relative">
-                 <select 
-                    value={item.type || 'text'}
-                    onChange={(e) => handleChange(item.id, 'type', e.target.value)}
-                    className="appearance-none h-full bg-white border border-gray-300 text-gray-600 text-[10px] rounded px-2 pr-6 py-1 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 cursor-pointer"
-                 >
-                     <option value="text">Text</option>
-                     <option value="file">File</option>
-                 </select>
-                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-gray-500">
-                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                 </div>
-             </div>
-          </div>
-          <div className="w-8 flex justify-center pt-2">
-            {/* Don't show delete button for the last empty row unless it has content */}
-            {(index !== items.length - 1 || item.key || item.value) && (
-                <button 
-                onClick={() => handleRemove(item.id)} 
-                className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                title="Remove"
-                >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-            )}
-          </div>
-        </div>
+        <InputTableRow
+            key={item.id}
+            item={item}
+            onChange={handleChange}
+            onFileChange={handleFileChange}
+            onRemove={handleRemove}
+            onToggle={handleToggle}
+            isLast={index === items.length - 1}
+            withTypeSelector={withTypeSelector}
+            showRemoveButton={items.length > 1 || !!item.key || !!item.value}
+        />
       ))}
 
       <div className="mt-2 px-1">

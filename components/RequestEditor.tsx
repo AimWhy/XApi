@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HttpRequest, KeyValue } from '../types';
 import { InputTable } from './InputTable';
 import { paramsToQueryString } from '../utils';
@@ -7,6 +7,55 @@ import { paramsToQueryString } from '../utils';
 interface RequestEditorProps {
   request: HttpRequest;
   onRequestChange: (req: HttpRequest) => void;
+}
+
+// Custom Dropdown for Body Type (JSON/Text/etc)
+const BodySyntaxSelect = ({ 
+    value, 
+    onChange 
+}: { 
+    value: string, 
+    onChange: (val: any) => void 
+}) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (ref.current && !ref.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const options = ['JSON', 'Text', 'HTML', 'XML'];
+
+    return (
+        <div className="relative" ref={ref}>
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className="bg-white border border-gray-200 rounded px-3 py-1 text-xs text-gray-600 focus:outline-none focus:border-green-500 flex items-center hover:bg-gray-50 transition-colors w-24 justify-between"
+            >
+                <span>{value || 'JSON'}</span>
+                <svg className={`fill-current h-2 w-2 text-gray-400 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+            </button>
+            {isOpen && (
+                <div className="absolute right-0 top-full mt-1 w-24 bg-white border border-gray-200 shadow-lg rounded z-50 py-1 flex flex-col">
+                    {options.map(opt => (
+                        <button
+                            key={opt}
+                            onClick={() => { onChange(opt); setIsOpen(false); }}
+                            className={`text-left px-3 py-1.5 text-xs hover:bg-green-50 hover:text-green-700 ${value === opt ? 'text-green-600 font-bold' : 'text-gray-700'}`}
+                        >
+                            {opt}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
 
 export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onRequestChange }) => {
@@ -68,14 +117,15 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onRequest
         {activeTab === 'params' && (
            <div>
                <div className="mb-2 text-xs text-gray-500">Query Parameters</div>
-               <InputTable items={request.params} onChange={handleParamsChange} hideTitle />
+               {/* Params don't need the Type selector (Text/File) */}
+               <InputTable items={request.params} onChange={handleParamsChange} hideTitle withTypeSelector={false} />
            </div>
         )}
 
         {activeTab === 'headers' && (
            <div>
               <div className="mb-2 text-xs text-gray-500">Request Headers</div>
-              <InputTable items={request.headers} onChange={(headers) => onRequestChange({ ...request, headers })} hideTitle />
+              <InputTable items={request.headers} onChange={(headers) => onRequestChange({ ...request, headers })} hideTitle withTypeSelector={false} />
            </div>
         )}
 
@@ -120,6 +170,8 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onRequest
                         items={request.bodyForm} 
                         onChange={(items) => onRequestChange({...request, bodyForm: items})}
                         hideTitle
+                        // Only show Text/File selector for form-data
+                        withTypeSelector={bodyType === 'form-data'}
                      />
                  )}
 
@@ -129,23 +181,16 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onRequest
                            <div className="flex space-x-2">
                                 <button 
                                     onClick={handleFormatJSON}
-                                    className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded border border-gray-200"
+                                    className="text-[10px] bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded border border-gray-200 transition-colors"
                                 >
                                     Format JSON
                                 </button>
                            </div>
                            
-                           <div className="relative">
-                               <select className="appearance-none bg-white border border-gray-200 rounded px-3 py-1 text-xs text-gray-600 focus:outline-none focus:border-green-500 pr-8 cursor-pointer">
-                                   <option>JSON</option>
-                                   <option>Text</option>
-                                   <option>HTML</option>
-                                   <option>XML</option>
-                               </select>
-                               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                                  <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
-                               </div>
-                           </div>
+                           <BodySyntaxSelect 
+                                value={request.bodyRawType || 'JSON'}
+                                onChange={(val) => onRequestChange({ ...request, bodyRawType: val })}
+                           />
                        </div>
                        <textarea
                          value={request.bodyRaw}
