@@ -210,7 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Filter url or method..."
-                    className="w-full text-xs px-2 py-1 bg-gray-50 border border-gray-200 rounded focus:outline-none focus:border-green-500"
+                    className="w-full text-xs px-3 py-1.5 bg-gray-100 border-transparent focus:bg-white border focus:border-green-500 rounded transition-colors focus:outline-none"
                  />
              </div>
              

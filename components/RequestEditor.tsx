@@ -195,7 +195,7 @@ export const RequestEditor: React.FC<RequestEditorProps> = ({ request, onRequest
                        <textarea
                          value={request.bodyRaw}
                          onChange={(e) => onRequestChange({ ...request, bodyRaw: e.target.value })}
-                         className="flex-1 w-full border border-gray-200 rounded p-3 font-mono text-xs resize-none focus:outline-none focus:border-green-500 bg-gray-50"
+                         className="flex-1 w-full bg-gray-50 focus:bg-white border border-gray-200 rounded p-3 font-mono text-xs resize-none focus:outline-none focus:border-green-500 transition-colors placeholder-gray-400"
                          placeholder='Enter request body...'
                        />
                    </div>

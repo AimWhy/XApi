@@ -56,7 +56,7 @@ const InputTableRow: React.FC<{
               value={item.key} 
               placeholder="Key"
               onChange={(e) => onChange(item.id, 'key', e.target.value)}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none transition-colors"
+              className="w-full bg-gray-50 hover:bg-gray-100 focus:bg-white border border-transparent hover:border-gray-300 focus:border-green-500 rounded px-2 py-1.5 text-sm focus:outline-none transition-all placeholder-gray-400"
             />
           </div>
           <div className="flex-1 px-1 relative flex space-x-1">
@@ -75,7 +75,7 @@ const InputTableRow: React.FC<{
                     value={item.value} 
                     placeholder="Value"
                     onChange={(e) => onChange(item.id, 'value', e.target.value)}
-                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:border-green-500 focus:outline-none transition-colors"
+                    className="w-full bg-gray-50 hover:bg-gray-100 focus:bg-white border border-transparent hover:border-gray-300 focus:border-green-500 rounded px-2 py-1.5 text-sm focus:outline-none transition-all placeholder-gray-400"
                 />
              )}
              
@@ -84,7 +84,7 @@ const InputTableRow: React.FC<{
                  <div className="relative w-[70px] flex-shrink-0" ref={typeRef}>
                      <button 
                         onClick={() => setIsTypeOpen(!isTypeOpen)}
-                        className="w-full h-full bg-white border border-gray-300 rounded px-2 flex items-center justify-between hover:border-gray-400 focus:border-green-500 transition-colors text-[10px] text-gray-600 font-medium"
+                        className="w-full h-full bg-gray-50 hover:bg-gray-100 border border-transparent hover:border-gray-300 rounded px-2 flex items-center justify-between focus:border-green-500 transition-colors text-[10px] text-gray-600 font-medium"
                      >
                          <span>{item.type === 'file' ? 'File' : 'Text'}</span>
                          <svg className={`fill-current h-2 w-2 text-gray-400 transform transition-transform ${isTypeOpen ? 'rotate-180' : ''}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
