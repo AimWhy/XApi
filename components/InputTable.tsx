@@ -109,14 +109,19 @@ export const InputTable: React.FC<InputTableProps> = ({ items, onChange, title, 
              )}
              
              {/* Type Selector Dropdown for Body items */}
-             <select 
-                value={item.type || 'text'}
-                onChange={(e) => handleChange(item.id, 'type', e.target.value)}
-                className="text-[10px] border border-gray-300 rounded px-1 text-gray-600 bg-gray-50 focus:outline-none"
-             >
-                 <option value="text">Text</option>
-                 <option value="file">File</option>
-             </select>
+             <div className="relative">
+                 <select 
+                    value={item.type || 'text'}
+                    onChange={(e) => handleChange(item.id, 'type', e.target.value)}
+                    className="appearance-none h-full bg-white border border-gray-300 text-gray-600 text-[10px] rounded px-2 pr-6 py-1 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 cursor-pointer"
+                 >
+                     <option value="text">Text</option>
+                     <option value="file">File</option>
+                 </select>
+                 <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1 text-gray-500">
+                    <svg className="fill-current h-3 w-3" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+                 </div>
+             </div>
           </div>
           <div className="w-8 flex justify-center pt-2">
             {/* Don't show delete button for the last empty row unless it has content */}
