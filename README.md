@@ -1,4 +1,4 @@
-# CaptureX HTTP Client - API Testing Tool
+# CaptureAPI HTTP Client - API Testing Tool
 
 A powerful, open-source Chrome Extension built with **Manifest V3** that acts as a lightweight Postman alternative directly inside your Chrome DevTools. Intercept, debug, edit, and replay HTTP requests without leaving the browser.
 
