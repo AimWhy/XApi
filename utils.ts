@@ -31,47 +31,58 @@ export const getMethodBadgeColor = (method?: string): string => {
     }
 };
 
-/**
- * Generates a cURL command from a LoggedRequest (Captured history)
- */
+const sanitizeForCurl = (str: string): string => {
+  if (!str) return '';
+  // Only remove null bytes which break shell commands, preserve other chars
+  return str.replace(/\x00/g, '');
+};
+
+const escapeShellArg = (arg: string): string => {
+  return `'${String(arg).replace(/'/g, "'\\''")}'`;
+};
+
 export const generateCurl = (log: LoggedRequest): string => {
-  let curl = `curl -X ${log.method} '${log.url}'`;
+  let curl = `curl -X ${log.method} ${escapeShellArg(sanitizeForCurl(log.url))}`;
   
   if (log.requestHeaders) {
     Object.entries(log.requestHeaders).forEach(([key, value]) => {
-      curl += ` \\\n  -H '${key}: ${value}'`;
+      curl += ` \\\n  -H ${escapeShellArg(`${key}: ${value}`)}`;
     });
   }
   
   if (log.requestBody) {
     let body = log.requestBody;
     if (typeof body === 'object') {
-      body = JSON.stringify(body);
+      Object.entries(body).forEach(([key, value]) => {
+        const val = Array.isArray(value) ? value[0] : value;
+        curl += ` \\\n  --form ${escapeShellArg(`${key}=${val}`)}`;
+      });
+    } else {
+      curl += ` \\\n  --data-raw ${escapeShellArg(sanitizeForCurl(String(body)))}`;
     }
-    const escapedBody = String(body).replace(/'/g, "'\\''");
-    curl += ` \\\n  --data-raw '${escapedBody}'`;
   }
   
   return curl;
 };
 
-/**
- * Generates a cURL command from an HttpRequest (Collection item)
- */
 export const generateCurlFromRequest = (req: HttpRequest): string => {
-    let curl = `curl -X ${req.method} '${req.url}'`;
+    let curl = `curl -X ${req.method} ${escapeShellArg(sanitizeForCurl(req.url))}`;
     
     req.headers.filter(h => h.enabled && h.key).forEach(h => {
-        curl += ` \\\n  -H '${h.key}: ${h.value}'`;
+        curl += ` \\\n  -H ${escapeShellArg(`${h.key}: ${h.value}`)}`;
     });
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
         if (req.bodyType === 'raw' && req.bodyRaw) {
-            const escapedBody = req.bodyRaw.replace(/'/g, "'\\''");
-            curl += ` \\\n  --data-raw '${escapedBody}'`;
+            curl += ` \\\n  --data-raw ${escapeShellArg(sanitizeForCurl(req.bodyRaw))}`;
         } else if (req.bodyType === 'x-www-form-urlencoded') {
             req.bodyForm.filter(f => f.enabled && f.key).forEach(f => {
-                curl += ` \\\n  --data '${f.key}=${f.value}'`;
+                curl += ` \\\n  --data ${escapeShellArg(`${f.key}=${f.value}`)}`;
+            });
+        } else if (req.bodyType === 'form-data') {
+            req.bodyForm.filter(f => f.enabled && f.key).forEach(f => {
+                const prefix = f.type === 'file' ? '@' : '';
+                curl += ` \\\n  --form ${escapeShellArg(`${f.key}=${prefix}${f.value}`)}`;
             });
         }
     }
@@ -82,7 +93,6 @@ export const generateCurlFromRequest = (req: HttpRequest): string => {
 export const parseCurl = (curlCommand: string): Partial<HttpRequest> | null => {
   if (!curlCommand || !curlCommand.trim().toLowerCase().startsWith('curl')) return null;
 
-  // 1. Preprocess: Remove backslashes followed by newlines to make it a single line
   const cleanCommand = curlCommand
     .replace(/\\\r?\n/g, ' ') 
     .replace(/[\r\n]+/g, ' ') 
@@ -90,27 +100,36 @@ export const parseCurl = (curlCommand: string): Partial<HttpRequest> | null => {
 
   const request: Partial<HttpRequest> = {
     headers: [],
+    params: [],
     method: 'GET',
     bodyType: 'raw',
     bodyRaw: ''
   };
 
-  // Improved Method Parsing: specifically looking for -X or --request flags
   const methodMatch = cleanCommand.match(/(?:-X|--request)\s+([A-Z]+)/i);
   if (methodMatch) {
       request.method = methodMatch[1].toUpperCase() as any;
   }
 
-  // Improved URL Parsing: Look specifically for http/https strings
-  // This prevents flags or methods from being identified as the URL
   const urlRegex = /(?:https?:\/\/[^\s'"]+)/i;
   const urlMatch = cleanCommand.match(urlRegex);
   if (urlMatch) {
-      // Clean up surrounding quotes
-      request.url = urlMatch[0].replace(/['"]$/, '').replace(/^['"]/, '');
+      let urlStr = urlMatch[0];
+      if ((urlStr.startsWith("'") && urlStr.endsWith("'")) || (urlStr.startsWith('"') && urlStr.endsWith('"'))) {
+          urlStr = urlStr.slice(1, -1);
+      }
+      request.url = urlStr;
+
+      try {
+          const urlObj = new URL(urlStr);
+          const params: KeyValue[] = [];
+          urlObj.searchParams.forEach((value, key) => {
+              params.push({ id: generateId(), key, value, enabled: true });
+          });
+          if (params.length > 0) request.params = params;
+      } catch (e) {}
   }
 
-  // Header parsing
   const headerRegex = /(?:-H|--header)\s+(['"])(.*?)\1/g;
   let headerMatch;
   while ((headerMatch = headerRegex.exec(cleanCommand)) !== null) {
@@ -123,16 +142,22 @@ export const parseCurl = (curlCommand: string): Partial<HttpRequest> | null => {
     }
   }
 
-  // Body parsing (support various data flags)
-  const dataRegex = /(?:--data-raw|--data-binary|--data-urlencode|--data|-d)\s+(['"])([\s\S]*?)\1/;
+  const dataRegex = /(?:--data-raw|--data-binary|--data-urlencode|--data|-d|--form|-F)\s+(['"])([\s\S]*?)\1/;
   const dataMatch = cleanCommand.match(dataRegex);
   
   if (dataMatch) {
-    request.bodyRaw = dataMatch[2];
-    request.bodyType = 'raw';
-    if (!methodMatch) {
-        request.method = 'POST';
+    const matchedArg = dataMatch[0];
+    if (matchedArg.includes('--form') || matchedArg.includes('-F')) {
+        request.bodyType = 'form-data';
+        const pair = dataMatch[2].split('=');
+        if (pair.length >= 2) {
+            request.bodyForm = [{ id: generateId(), key: pair[0], value: pair.slice(1).join('='), enabled: true, type: 'text' }];
+        }
+    } else {
+        request.bodyRaw = dataMatch[2];
+        request.bodyType = 'raw';
     }
+    if (!methodMatch) request.method = 'POST';
   }
 
   return request;

@@ -21,7 +21,7 @@ chrome.runtime.onInstalled.addListener(() => {
   updateBadge(false);
   // Clear any existing dynamic rules on startup
   chrome.declarativeNetRequest.updateSessionRules({
-     removeRuleIds: [1] // We use ID 1 for the singleton active request rule
+     removeRuleIds: [1] 
   });
 });
 
@@ -35,28 +35,31 @@ chrome.storage.onChanged.addListener((changes) => {
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'SET_REQUEST_HEADERS') {
         const { url, headers } = message;
-        // headers: { name: string, value: string }[]
         
-        // We use a fixed Rule ID (1) for the "Active Debug Request".
         const ruleId = 1;
 
+        // 构建 Header 列表，使用 SET 操作进行覆盖
         const requestHeaders = headers.map((h: any) => ({
-            header: h.name,
+            header: h.key || h.name, 
             operation: chrome.declarativeNetRequest.HeaderOperation.SET,
             value: h.value
         }));
 
+        // 提取 Host 用于更精确的 urlFilter，或者直接使用传入的 URL
+        // 使用锚点 | 确保精确匹配起始位置，移除查询参数避免 Pattern 冲突
+        const cleanUrl = url.split('?')[0];
+
         const rule = {
             id: ruleId,
-            priority: 1,
+            priority: 999, // 提高优先级，确保覆盖浏览器默认行为
             action: {
                 type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
                 requestHeaders: requestHeaders
             },
             condition: {
-                urlFilter: url, 
+                urlFilter: cleanUrl, 
                 resourceTypes: [
-                    chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST,
+                    chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST, // fetch 本质也是此类型
                     chrome.declarativeNetRequest.ResourceType.OTHER
                 ]
             }
@@ -66,10 +69,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             removeRuleIds: [ruleId],
             addRules: [rule]
         }).then(() => {
+            console.debug('DNR Rule Applied for Cookie/Origin override');
             sendResponse({ success: true });
+        }).catch(err => {
+            console.error('DNR Error:', err);
+            sendResponse({ success: false, error: err.message });
         });
 
         return true; 
+    }
+
+    if (message.type === 'CLEAR_REQUEST_HEADERS') {
+        chrome.declarativeNetRequest.updateSessionRules({
+            removeRuleIds: [1]
+        }).then(() => {
+            sendResponse({ success: true });
+        });
+        return true;
     }
 });
 
@@ -109,7 +125,6 @@ const saveLog = (log: any) => {
 };
 
 const isExtensionRequest = (details: any) => {
-    // Check if the request is initiated by our own extension ID or internal pages
     return (
         details.initiator?.includes(EXTENSION_ID) ||
         details.url.startsWith('chrome-extension://') || 
