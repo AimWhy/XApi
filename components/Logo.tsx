@@ -5,6 +5,7 @@ interface LogoProps {
   className?: string;
   size?: number;
   showText?: boolean;
+  textColor?: string;
 }
 
 /**
@@ -12,11 +13,16 @@ interface LogoProps {
  * Design: Logic Prism v5.0
  * Colors: Logic Blue (#00F2FF) & Creative Purple (#FF00E5)
  */
-export const Logo: React.FC<LogoProps> = ({ className = "", size = 32, showText = true }) => {
+export const Logo: React.FC<LogoProps> = ({ 
+  className = "", 
+  size = 32, 
+  showText = true,
+  textColor = "text-slate-800"
+}) => {
   const uniqueId = React.useId().replace(/:/g, "");
   
   return (
-    <div className={`flex items-center gap-3 ${className}`} style={{ height: size }}>
+    <div className={`flex items-center gap-2.5 ${className}`} style={{ height: size }}>
       <svg 
         width={size} 
         height={size} 
@@ -40,7 +46,7 @@ export const Logo: React.FC<LogoProps> = ({ className = "", size = 32, showText 
         <path
           d="M48 24H32C27.5817 24 24 27.5817 24 32V96C24 100.418 27.5817 104 32 104H48"
           stroke={`url(#grad_blue_${uniqueId})`}
-          strokeWidth="12"
+          strokeWidth="16"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -49,7 +55,7 @@ export const Logo: React.FC<LogoProps> = ({ className = "", size = 32, showText 
         <path
           d="M76 24L52 104"
           stroke={`url(#grad_purple_${uniqueId})`}
-          strokeWidth="12"
+          strokeWidth="16"
           strokeLinecap="round"
           strokeLinejoin="round"
           opacity="0.9"
@@ -65,10 +71,10 @@ export const Logo: React.FC<LogoProps> = ({ className = "", size = 32, showText 
 
       {showText && (
         <span 
-          className="font-black tracking-tighter text-slate-800 select-none"
-          style={{ fontSize: size * 0.7, lineHeight: 1 }}
+          className={`font-black tracking-tighter select-none ${textColor}`}
+          style={{ fontSize: size * 0.75, lineHeight: 1 }}
         >
-          X<span className="font-light text-slate-400">Api</span>
+          X<span className="opacity-40 font-light ml-0.5">Api</span>
         </span>
       )}
     </div>

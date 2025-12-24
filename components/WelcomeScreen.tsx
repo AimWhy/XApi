@@ -13,12 +13,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onCreateRequest, o
   return (
     <div className="h-full flex flex-col items-center justify-center bg-gray-50 p-8">
       <div className="text-center max-w-2xl flex flex-col items-center">
-        <div className="mb-6 p-4 bg-white rounded-2xl shadow-sm border border-green-50">
-            <Logo size={64} className="text-green-600" />
+        <div className="mb-6 p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+            <Logo size={64} showText={false} />
         </div>
         
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">XApi</h1>
-        <p className="text-gray-600 mb-10 text-lg">
+        <h1 className="text-4xl font-black text-slate-800 mb-2 tracking-tighter">
+          X<span className="font-light text-slate-400">Api</span>
+        </h1>
+        <p className="text-slate-500 mb-10 text-lg font-medium">
           Intercept, debug, and replay API requests with professional ease.
         </p>
 

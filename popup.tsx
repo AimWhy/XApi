@@ -61,10 +61,7 @@ const Popup = () => {
     <div className="w-80 bg-white flex flex-col h-[500px]">
       {/* Header */}
       <div className="px-4 py-3 bg-gray-900 text-white flex justify-between items-center shadow-md flex-shrink-0">
-         <h1 className="font-bold text-sm flex items-center">
-            <Logo className="text-green-400 mr-2" size={16} />
-            XApi
-         </h1>
+         <Logo size={18} textColor="text-white" />
          <div className="flex items-center space-x-2">
              <button 
                 onClick={toggleRecording}
