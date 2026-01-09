@@ -43,11 +43,11 @@ https://github.com/user-attachments/assets/490f58f6-b000-49de-80e1-702669052b55
 ## 🚀 Getting Started
 
 ### Installation
-#### 1. Via Chrome Web Store (Recommended)
+#### Via Chrome Web Store (Recommended)
 XApi is available on the Chrome Web Store. You can search for **XApi** directly or use the link below:
 * **Store Link**: [XApi - HTTP Client & API Test](https://chromewebstore.google.com/detail/xapi-http-client-api-test/ilcnglohbiokfdcokfceihebobkpeaij?authuser=0&hl=en)
 
-#### 2. Manual Installation (From Source)
+#### Manual Installation (From Source)
 If you prefer to build the extension manually for development purposes:
 1.  **Clone & Build**:
     ```bash
