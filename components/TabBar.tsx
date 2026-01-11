@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { TabItem, CollectionItem } from '../types';
 import { getMethodColor } from '../utils';
 
@@ -15,12 +15,12 @@ interface TabBarProps {
     onSaveToCollection: (reqId: string, colId: string) => void;
 }
 
-export const TabBar: React.FC<TabBarProps> = ({ 
-    tabs, activeTabId, onTabClick, onTabClose, onTabReorder, onTabRename, onTabAction, collections, onSaveToCollection 
+export const TabBar: React.FC<TabBarProps> = ({
+    tabs, activeTabId, onTabClick, onTabClose, onTabReorder, onTabRename, onTabAction, collections, onSaveToCollection
 }) => {
     // Dropdown state for "Save to Collection"
     const [saveDropdown, setSaveDropdown] = useState<{ isOpen: boolean, x: number, y: number, tabId: string } | null>(null);
-    
+
     // Overflow Dropdown State
     const [isOverflowOpen, setIsOverflowOpen] = useState(false);
     const [hasOverflow, setHasOverflow] = useState(false);
@@ -122,7 +122,6 @@ export const TabBar: React.FC<TabBarProps> = ({
         const checkOverflow = () => {
             if (scrollContainerRef.current) {
                 const { scrollWidth, clientWidth } = scrollContainerRef.current;
-                // Add a small buffer (e.g. 1px) to avoid precision issues
                 setHasOverflow(scrollWidth > clientWidth + 1);
             }
         };
@@ -155,14 +154,14 @@ export const TabBar: React.FC<TabBarProps> = ({
     }, []);
 
     return (
-        <div className="flex items-end bg-gray-100 pt-1 px-1 relative select-none">
+        <div className="flex items-end bg-gray-100 px-1 relative select-none h-9">
             {/* Absolute border line: Acts as the bottom track. */}
             <div className="absolute bottom-0 left-0 right-0 h-px bg-gray-200 z-0"></div>
 
             {/* Scrollable Area */}
-            <div 
+            <div
                 ref={scrollContainerRef}
-                className={`flex-1 flex overflow-x-auto no-scrollbar items-end relative z-10 ${hasOverflow ? 'pr-8' : ''}`}
+                className={`flex-1 flex overflow-x-auto no-scrollbar items-end relative z-10 h-full ${hasOverflow ? 'pr-8' : ''}`}
             >
                 {tabs.map((tab, index) => (
                     <React.Fragment key={tab.id}>
