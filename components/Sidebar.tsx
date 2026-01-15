@@ -240,7 +240,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             <span className={`text-[10px] font-bold ${getMethodColor(item.method)}`}>{item.method}</span>
                             <span className="text-[9px] text-gray-400 font-mono">{formatTime(item.timestamp)}</span>
                          </div>
-                         <span className={`text-[9px] px-1 rounded font-bold ${item.status >= 400 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'}`}>{item.status || '...'}</span>
+                         <div className="flex items-center space-x-2">
+                             <span className={`text-[9px] px-1 rounded font-bold ${item.status >= 400 ? 'text-red-600 bg-red-50' : 'text-green-600 bg-green-50'}`}>{item.status || '...'}</span>
+                             <button
+                                onClick={(e) => { e.stopPropagation(); onDeleteLog(item.id); }}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
+                                title="Delete Log"
+                             >
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth={2}/></svg>
+                             </button>
+                         </div>
                        </div>
                        <div className={`text-[11px] font-semibold truncate ${isActive ? 'text-indigo-900' : 'text-slate-800'}`}>{origin}</div>
                        <div className={`text-[10px] truncate font-mono mt-0.5 ${isActive ? 'text-indigo-600/70' : 'text-slate-500'}`}>{path}</div>
@@ -305,6 +314,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <>
                       <button className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center" onClick={() => { onMoveRequest(contextMenu.id, null); setContextMenu(null); }}><svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4" strokeWidth={2}/></svg>Save</button>
                       <button className="w-full text-left px-4 py-2 text-xs text-gray-700 hover:bg-gray-100 flex items-center" onClick={() => { copyToClipboard(generateCurl(contextMenu.data)); setContextMenu(null); }}><svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" strokeWidth={2}/></svg>Copy cURL</button>
+                      <button className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center" onClick={() => { onDeleteLog(contextMenu.id); setContextMenu(null); }}><svg className="w-3.5 h-3.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth={2}/></svg>Delete</button>
                   </>
               )}
               {contextMenu.type === 'request' && (

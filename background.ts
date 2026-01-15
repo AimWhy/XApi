@@ -55,9 +55,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             },
             condition: {
                 urlFilter: cleanUrl,
+                // Only modify headers for API requests (fetch/XHR)
                 resourceTypes: [
-                    chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST,
-                    chrome.declarativeNetRequest.ResourceType.OTHER
+                    chrome.declarativeNetRequest.ResourceType.XMLHTTPREQUEST
                 ]
             }
         };
@@ -133,6 +133,14 @@ const isExtensionRequest = (details: any) => {
     );
 };
 
+/**
+ * Filter for API requests only.
+ * In Chrome's webRequest API, 'xmlhttprequest' covers both XHR and Fetch.
+ */
+const isApiRequest = (details: any) => {
+    return details.type === 'xmlhttprequest';
+};
+
 // Internal helper to get or create a pending request object
 const getOrCreatePending = (requestId: string) => {
     if (!pendingRequests[requestId]) {
@@ -150,7 +158,7 @@ const getOrCreatePending = (requestId: string) => {
 // 1. Capture Basic Info & Body
 chrome.webRequest.onBeforeRequest.addListener(
   (details: any) => {
-    if (isExtensionRequest(details) || details.type === 'ping') return;
+    if (isExtensionRequest(details) || details.type === 'ping' || !isApiRequest(details)) return;
 
     chrome.storage.local.get(['isRecording'], (result) => {
       if (!result.isRecording) return;
@@ -180,7 +188,7 @@ chrome.webRequest.onBeforeRequest.addListener(
 // 2. Capture Request Headers
 chrome.webRequest.onBeforeSendHeaders.addListener(
   (details: any) => {
-    if (isExtensionRequest(details)) return;
+    if (isExtensionRequest(details) || !isApiRequest(details)) return;
 
     chrome.storage.local.get(['isRecording'], (result) => {
         if (!result.isRecording) return;
@@ -200,7 +208,7 @@ chrome.webRequest.onBeforeSendHeaders.addListener(
 // 3. Capture Response Headers
 chrome.webRequest.onHeadersReceived.addListener(
   (details: any) => {
-    if (isExtensionRequest(details)) return;
+    if (isExtensionRequest(details) || !isApiRequest(details)) return;
 
     chrome.storage.local.get(['isRecording'], (result) => {
         if (!result.isRecording) return;
@@ -220,7 +228,7 @@ chrome.webRequest.onHeadersReceived.addListener(
 // 4. Capture Completion
 chrome.webRequest.onCompleted.addListener(
   (details: any) => {
-    if (pendingRequests[details.requestId]) {
+    if (pendingRequests[details.requestId] && isApiRequest(details)) {
       const log = pendingRequests[details.requestId];
       log.status = details.statusCode;
       saveLog(log);
@@ -233,7 +241,7 @@ chrome.webRequest.onCompleted.addListener(
 
 chrome.webRequest.onErrorOccurred.addListener(
   (details: any) => {
-    if (pendingRequests[details.requestId]) {
+    if (pendingRequests[details.requestId] && isApiRequest(details)) {
       const log = pendingRequests[details.requestId];
       log.status = 0;
       log.error = details.error;
