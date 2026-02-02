@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { HttpRequest, HttpMethod } from '../types';
-import { getMethodColor } from '../utils';
+import { getMethodColor, queryStringToParams } from '../utils';
 
 interface RequestHeaderProps {
     request: HttpRequest;
@@ -29,6 +29,23 @@ export const RequestHeader: React.FC<RequestHeaderProps> = ({ request, onRequest
     const handleMethodSelect = (m: HttpMethod) => {
         onRequestChange({ ...request, method: m });
         setIsMethodOpen(false);
+    };
+
+    const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newUrl = e.target.value;
+        const queryIndex = newUrl.indexOf('?');
+        let newParams = [];
+
+        if (queryIndex !== -1) {
+            const queryString = newUrl.substring(queryIndex + 1);
+            newParams = queryStringToParams(queryString);
+        }
+
+        onRequestChange({
+            ...request,
+            url: newUrl,
+            params: newParams
+        });
     };
 
     // 获取国际化文本
@@ -70,7 +87,7 @@ export const RequestHeader: React.FC<RequestHeaderProps> = ({ request, onRequest
                 <input
                     type="text"
                     value={request.url}
-                    onChange={(e) => onRequestChange({ ...request, url: e.target.value })}
+                    onChange={handleUrlChange}
                     placeholder={enterRequestUrlText}
                     className="flex-1 bg-gray-50 hover:bg-white focus:bg-white border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 focus:border-green-500 z-0 focus:z-10 font-mono text-gray-700 min-w-0 transition-all placeholder-gray-400"
                 />
